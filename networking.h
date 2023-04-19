@@ -1,7 +1,4 @@
 #include <iostream>
-#include <curses.h>
-#include <thread>
-#include <map>
 #include <stdio.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -15,6 +12,8 @@
 #include <stdexcept>
 
 //defines
+const size_t recvSocketBufferSize = 500;
+
 const int closedSocketVal = -1;
 
 //functions here
@@ -47,6 +46,8 @@ class RCnetworking{
     //variables
     int clientSocket = -1;
 
+    char *bufferRecv;
 
+    size_t bufferSize = recvSocketBufferSize;
 
 };
