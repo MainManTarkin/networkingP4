@@ -1,6 +1,6 @@
 #include "networking.h"
 
-RCnetworking::RCnetworking(std::string portValInput, std::string addressValInput, std::string userNameInput)
+RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std::string userNameInput)
 {
 
     int getAddressReturnVal = 0;
@@ -15,7 +15,7 @@ RCnetworking::RCnetworking(std::string portValInput, std::string addressValInput
     basedInfo.ai_family = AF_UNSPEC;
     basedInfo.ai_socktype = SOCK_STREAM;
 
-    if ((getAddressReturnVal = getaddrinfo(addressValInput.c_str(), portValInput.c_str(), &basedInfo, &serverAddrInfo)) != 0)
+    if ((getAddressReturnVal = getaddrinfo(addressInput.c_str(), portInput.c_str(), &basedInfo, &serverAddrInfo)) != 0)
     {
         std::cerr << "RCnetworking() - problem with getaddrinfo(): Line: " << (__LINE__ - 2) << "| return code: " << gai_strerror(getAddressReturnVal) << std::endl;
 
