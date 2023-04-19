@@ -53,4 +53,7 @@ bestNetworkingClassEver::bestNetworkingClassEver(std::string portValInput, std::
         std::cerr << "initClient() - failed to connect to server" << std::endl;
         throw std::runtime_error("check your internet connection cause it probs sucks num-nuts");
     }
+
+
+    freeaddrinfo(serverAddrInfo);
 }

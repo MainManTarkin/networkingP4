@@ -19,9 +19,6 @@ const int closedSocketVal = -1;
 
 //functions here
 
-
-//inline int initClientSocket(std::string portValInput, std::string addressValInput);
-
 class bestNetworkingClassEver{
 
     public:
@@ -35,10 +32,16 @@ class bestNetworkingClassEver{
 
     bool checkForRecv();
 
+    //returns a message appended with a newline
     std::string getMessage();
 
     private:
 
+    //fucntions
+
+    void prepareMessage(std::string messageToSend);
+
+    //variables
     int clientSocket = -1;
 
 
