@@ -24,7 +24,7 @@ class RCnetworking{
     public:
     //were going to open a socket
     //throws if an error pops up
-    RCnetworking(std::string portValInput, std::string addressValInput, std::string userNameInput);
+    RCnetworking(std::string portInput, std::string addressInput, std::string userNameInput);
 
     //sends disconnection message to server and closes socket
     ~RCnetworking();
