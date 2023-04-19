@@ -42,7 +42,7 @@ class RCnetworking{
 
     //fucntions
 
-    void prepareMessage(std::string messageToSend);
+    void prepareMessage(std::string *messageToSend, char command);
 
     //variables
     int clientSocket = -1;

@@ -1,9 +1,37 @@
 #include "networking.h"
 
+
+void RCnetworking::prepareMessage(std::string *messageToSend, char command){
+
+
+    switch (command)
+    {
+    case 'G':
+        messageToSend->clear();
+        messageToSend->insert(messageToSend->begin(), command);
+        messageToSend->append("|OODBYE\n");
+        
+        break;
+    
+    default:
+        messageToSend->insert(messageToSend->begin(),command);
+        messageToSend->insert((messageToSend->begin() + 1),command);
+        messageToSend->append("\n");
+        break;
+    }
+
+
+}
+
 RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std::string userNameInput)
 {
 
     int getAddressReturnVal = 0;
+    int bytesSent = 0;
+    int bytesRecv = 0;
+
+    int delayIterations = 30;
+    
 
     struct addrinfo basedInfo;
     struct addrinfo *serverAddrInfo = nullptr;
@@ -57,6 +85,30 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
 
     freeaddrinfo(serverAddrInfo);
 
+    if (fcntl(clientSocket, F_SETFL, O_NONBLOCK) == -1)
+        {
 
+            perror("prepareClient() - problem setting the socket to non-blocking: ");
+
+            throw std::runtime_error("you can not even block a socket num-nuts");
+        }
+
+    prepareMessage(&userNameInput,'H');
+
+    if((bytesSent = send(clientSocket,userNameInput.c_str(), userNameInput.size(),0)) == -1){
+
+        perror("RCnetworking() - problem with send(): ");
+
+        throw std::runtime_error("your grandmas potato cant even send the message num-nuts");
+    }
+
+    do
+    {
+    
+
+
+    } while (--delayIterations);
+    
+    
 
 }
