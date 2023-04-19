@@ -26,10 +26,13 @@ class bestNetworkingClassEver{
     //throws if an error pops up
     bestNetworkingClassEver(std::string portValInput, std::string addressValInput, std::string userNameInput);
 
+    //sends disconnection message to server and closes socket
     ~bestNetworkingClassEver();
 
+    // send a message to the server
     int sendMessage(std::string messageInput);
 
+    // check if there is a message to be received
     bool checkForRecv();
 
     //returns a message appended with a newline
