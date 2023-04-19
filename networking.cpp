@@ -204,3 +204,30 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
 
     memset(bufferRecv, 0, bufferSize);
 }
+
+
+RCnetworking::~RCnetworking(){
+
+    std::string goodbyeMessage;
+    
+    
+    prepareMessage(&goodbyeMessage, 'G');
+    
+    if(send(clientSocket, goodbyeMessage.c_str(), goodbyeMessage.size(),0) == -1){
+
+        perror("~RCnetworking() - problem with send()ing goodbye message: ");
+
+    }
+    
+    delete[] bufferRecv;
+
+
+    if(close(clientSocket)){
+
+        perror("~RCnetworking() - problem with close()ing socket: ");
+
+
+
+    }
+
+}
