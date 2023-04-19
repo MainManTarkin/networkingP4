@@ -1,6 +1,6 @@
 #include "networking.h"
 
-bestNetworkingClassEver::bestNetworkingClassEver(std::string portValInput, std::string addressValInput, std::string userNameInput)
+RCnetworking::RCnetworking(std::string portValInput, std::string addressValInput, std::string userNameInput)
 {
 
     int getAddressReturnVal = 0;
@@ -17,7 +17,7 @@ bestNetworkingClassEver::bestNetworkingClassEver(std::string portValInput, std::
 
     if ((getAddressReturnVal = getaddrinfo(addressValInput.c_str(), portValInput.c_str(), &basedInfo, &serverAddrInfo)) != 0)
     {
-        std::cerr << "bestNetworkingClassEver() - problem with getaddrinfo(): Line: " << (__LINE__ - 2) << "| return code: " << gai_strerror(getAddressReturnVal) << std::endl;
+        std::cerr << "RCnetworking() - problem with getaddrinfo(): Line: " << (__LINE__ - 2) << "| return code: " << gai_strerror(getAddressReturnVal) << std::endl;
 
         throw std::runtime_error("you put in the wrong input num-nuts");
     }
@@ -26,7 +26,7 @@ bestNetworkingClassEver::bestNetworkingClassEver(std::string portValInput, std::
     {
         if ((clientSocket = socket(addList->ai_family, addList->ai_socktype, addList->ai_protocol)) == -1)
         {
-            perror("bestNetworkingClassEver() - problem with socket(): ");
+            perror("RCnetworking() - problem with socket(): ");
 
             continue;
         }
@@ -36,7 +36,7 @@ bestNetworkingClassEver::bestNetworkingClassEver(std::string portValInput, std::
             if (close(clientSocket))
             {
 
-                perror("bestNetworkingClassEver() - problem with close(): ");
+                perror("RCnetworking() - problem with close(): ");
 
                 std::cerr << "Line: " << (__LINE__ - 5) << std::endl;
             }
@@ -50,10 +50,13 @@ bestNetworkingClassEver::bestNetworkingClassEver(std::string portValInput, std::
 
     if (addList == NULL)
     {
-        std::cerr << "initClient() - failed to connect to server" << std::endl;
+        std::cerr << "RCnetworking() - failed to connect to server" << std::endl;
         throw std::runtime_error("check your internet connection cause it probs sucks num-nuts");
     }
 
 
     freeaddrinfo(serverAddrInfo);
+
+
+
 }
