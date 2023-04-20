@@ -2,8 +2,8 @@
 
 const char ackMessage[] = "A|OK\n";
 
-void RCnetworking::prepareMessage(std::string *messageToSend, char command){
-
+void RCnetworking::prepareMessage(std::string *messageToSend, char command)
+{
 
     switch (command)
     {
@@ -11,17 +11,15 @@ void RCnetworking::prepareMessage(std::string *messageToSend, char command){
         messageToSend->clear();
         messageToSend->insert(messageToSend->begin(), command);
         messageToSend->append("|OODBYE\n");
-        
+
         break;
-    
+
     default:
-        messageToSend->insert(messageToSend->begin(),command);
-        messageToSend->insert((messageToSend->begin() + 1),command);
+        messageToSend->insert(messageToSend->begin(), command);
+        messageToSend->insert((messageToSend->begin() + 1), '|');
         messageToSend->append("\n");
         break;
     }
-
-
 }
 
 RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std::string userNameInput)
@@ -31,37 +29,31 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     int bytesSent = 0;
     int bytesRecv = 0;
 
-    int delayIterations = 30;
+    struct timeval timeoutVal;
+    timeoutVal.tv_sec = timeOutSec;
+    timeoutVal.tv_usec = timeOutUSec;
 
-    struct timeval timeoutVal = { .tv_sec = 3, .tv_usec = 0};
-    
     fd_set readfds;
 
     int highFileDescriptor = 0;
     int selectRV = 0;
 
-    struct addrinfo basedInfo;
-    struct addrinfo *serverAddrInfo = nullptr;
-    struct addrinfo *addList = nullptr;
-
     memset(&basedInfo, 0, sizeof(struct addrinfo));
 
-    //set up buffer
+    // set up buffer
 
     try
     {
 
         bufferRecv = new char[recvSocketBufferSize];
-
     }
-    catch(const std::exception& e)
+    catch (const std::exception &e)
     {
         std::cerr << e.what() << std::endl;
         throw std::runtime_error("failed allocation of recv buffer");
     }
-    
 
-
+    bufferAllocated = true;
 
     // set socket for tcp and dont care about ip version
     basedInfo.ai_family = AF_UNSPEC;
@@ -71,8 +63,12 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     {
         std::cerr << "RCnetworking() - problem with getaddrinfo(): Line: " << (__LINE__ - 2) << "| return code: " << gai_strerror(getAddressReturnVal) << std::endl;
 
+        this->~RCnetworking();
+
         throw std::runtime_error("you put in the wrong input num-nuts");
     }
+
+    getAdderListCreated = true;
 
     for (addList = serverAddrInfo; addList != NULL; addList = addList->ai_next)
     {
@@ -93,7 +89,6 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
                 std::cerr << "Line: " << (__LINE__ - 5) << std::endl;
             }
             clientSocket = closedSocketVal;
-            perror("initClient() - problem with connect(): ");
             continue;
         }
 
@@ -103,131 +98,115 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     if (addList == NULL)
     {
         std::cerr << "RCnetworking() - failed to connect to server" << std::endl;
+        this->~RCnetworking();
         throw std::runtime_error("check your internet connection cause it probs sucks num-nuts");
     }
 
-
-    freeaddrinfo(serverAddrInfo);
+    socketCreated = true;
 
     if (fcntl(clientSocket, F_SETFL, O_NONBLOCK) == -1)
-        {
+    {
 
-            perror("prepareClient() - problem setting the socket to non-blocking: ");
+        perror("prepareClient() - problem setting the socket to non-blocking: ");
+        this->~RCnetworking();
+        throw std::runtime_error("you can not even block a socket num-nuts");
+    }
 
-            throw std::runtime_error("you can not even block a socket num-nuts");
-        }
+    prepareMessage(&userNameInput, 'H');
 
-    prepareMessage(&userNameInput,'H');
-
-    if((bytesSent = send(clientSocket,userNameInput.c_str(), userNameInput.size(),0)) == -1){
+    if ((bytesSent = send(clientSocket, userNameInput.c_str(), userNameInput.size(), 0)) == -1)
+    {
 
         perror("RCnetworking() - problem with send(): ");
-
+        this->~RCnetworking();
         throw std::runtime_error("your grandmas potato cant even send the message num-nuts");
     }
 
-    /* commented incase we need to go back to this approach
-    do
-    {
-    
-        if((bytesRecv = recv(clientSocket,bufferRecv, bufferSize,0)) == -1){
-
-            if (errno != EAGAIN || errno != EWOULDBLOCK)
-            {
-
-                perror("RCnetworking() - problem with recv(): ");
-
-
-                throw std::runtime_error("your computer recv()s messages like a drunken sailor num-nuts");
-            }
-
-        }
-
-        if(bytesRecv > 0){
-
-
-
-        }
-
-    } while (delayIterations--);
-    */
-
-   /*
-   *    clear and add our only socket to the file descriptor list 
-   *    we prepare the variables needed for select() by stating the highest number FD+1
-   *    the timeout value is set the three seconds
-   *    select() is called to wait until we recv the ack message from the server or the timeout expires
-   *    
-   */
+    /*
+     *    clear and add our only socket to the file descriptor list
+     *    we prepare the variables needed for select() by stating the highest number FD+1
+     *    the timeout value is set the three seconds
+     *    select() is called to wait until we recv the ack message from the server or the timeout expires
+     *
+     */
 
     FD_ZERO(&readfds);
     FD_SET(clientSocket, &readfds);
 
     highFileDescriptor = clientSocket + 1;
 
-    if((selectRV = select(highFileDescriptor,&readfds,NULL,NULL, &timeoutVal)) == -1){
+    if ((selectRV = select(highFileDescriptor, &readfds, NULL, NULL, &timeoutVal)) == -1)
+    {
 
         perror("RCnetworking() - problem with select(): ");
-
+        this->~RCnetworking();
         throw std::runtime_error("you could not even select() a functional socket num-nuts");
-
-    }else if(!selectRV){
-
+    }
+    else if (!selectRV)
+    {
+        this->~RCnetworking();
         throw std::runtime_error("select() timed out for receiving ack message from server ");
+    }
+    else
+    {
 
-    }else{
-
-        if((bytesRecv = recv(clientSocket,bufferRecv, bufferSize,0)) == -1){
+        if ((bytesRecv = recv(clientSocket, bufferRecv, bufferSize, 0)) == -1)
+        {
 
             if (errno != EAGAIN || errno != EWOULDBLOCK)
             {
 
                 perror("RCnetworking() - problem with recv(): ");
-
-
+                this->~RCnetworking();
                 throw std::runtime_error("your computer recv()s messages like a drunken sailor num-nuts");
             }
-
-        }else{
-
-            if(strncmp(bufferRecv, ackMessage, sizeof(ackMessage))){
-
-                throw std::runtime_error("server sent bad ack message");
-
-            }
-
         }
+        else
+        {
 
-
-
+            if (strncmp(bufferRecv, ackMessage, sizeof(ackMessage)))
+            {
+                this->~RCnetworking();
+                throw std::runtime_error("server sent bad ack message");
+            }
+        }
     }
 
     memset(bufferRecv, 0, bufferSize);
 }
 
+RCnetworking::~RCnetworking()
+{
 
-RCnetworking::~RCnetworking(){
+    if (socketCreated)
+    {
 
-    std::string goodbyeMessage;
-    
-    
-    prepareMessage(&goodbyeMessage, 'G');
-    
-    if(send(clientSocket, goodbyeMessage.c_str(), goodbyeMessage.size(),0) == -1){
+        std::string goodbyeMessage;
 
-        perror("~RCnetworking() - problem with send()ing goodbye message: ");
+        prepareMessage(&goodbyeMessage, 'G');
 
-    }
-    
-    delete[] bufferRecv;
+        if (send(clientSocket, goodbyeMessage.c_str(), goodbyeMessage.size(), 0) == -1)
+        {
 
+            perror("~RCnetworking() - problem with send()ing goodbye message: ");
+        }
 
-    if(close(clientSocket)){
+        if (close(clientSocket))
+        {
 
-        perror("~RCnetworking() - problem with close()ing socket: ");
-
-
-
+            perror("~RCnetworking() - problem with close()ing socket: ");
+        }
     }
 
+    if (bufferAllocated)
+    {
+
+        delete[] bufferRecv;
+    }
+
+    if (getAdderListCreated)
+    {
+
+        freeaddrinfo(serverAddrInfo);
+    }
 }
