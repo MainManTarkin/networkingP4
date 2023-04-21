@@ -1,6 +1,9 @@
 
 //file is for test the RCnetworking class
 #include "networking.h"
+//used for a delay
+#include <chrono>
+#include <thread>
 
 #define goodReturn 0
 #define defualtBadReturn 1
@@ -95,6 +98,8 @@ int main(int argc, char* argv[]){
     try
     {
         RCnetworking testNetworkingAPI(portNumber, address, username);
+        testNetworkingAPI.sendMessage("Hello!");
+        std::this_thread::sleep_for(std::chrono::milliseconds(500)); // delay to avoid crashing Perry's server
 
 
     }
@@ -103,9 +108,9 @@ int main(int argc, char* argv[]){
         std::cerr << e.what() << std::endl;
         mainRetVal = 1;
     }
-    
 
-    
+
+
 
     return mainRetVal;
 }

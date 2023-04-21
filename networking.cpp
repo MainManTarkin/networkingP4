@@ -63,7 +63,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     {
         std::cerr << "RCnetworking() - problem with getaddrinfo(): Line: " << (__LINE__ - 2) << "| return code: " << gai_strerror(getAddressReturnVal) << std::endl;
 
-        this->~RCnetworking();
+        this->~RCnetworking();// Calling this manually feels both unnecessary and potentially dangerous but IDK for sure -- JS
 
         throw std::runtime_error("you put in the wrong input num-nuts");
     }
