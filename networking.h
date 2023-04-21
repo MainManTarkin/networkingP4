@@ -138,7 +138,7 @@ public:
     std::string getMessage();
 
 private:
-    // fucntions
+    // functions
 
     void prepareMessage(std::string *messageToSend, char command);
 
