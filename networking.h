@@ -90,10 +90,9 @@ public:
      * Parameters:
      *   std::string messageInput -- the message to be sent
      * Returns:
-     *   An integer indicating if the message was sent.
+     *   An integer containing how many characters were sent.
      * !!! Could someone confirm the purpose of this int return?
-     * !!! I'm not sure why we need it given the function SHOULD throw if there
-     * !!! is an error sending the message
+     * !!! I'm not sure if it's useful for the consumer to know
      * Exceptions:
      *   A std::runtime_error will be thrown if there is an error sending the message.
      *   An error message may be printed to standard error as well. Other

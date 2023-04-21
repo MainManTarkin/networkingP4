@@ -210,3 +210,21 @@ RCnetworking::~RCnetworking()
         freeaddrinfo(serverAddrInfo);
     }
 }
+
+int RCnetworking::sendMessage(std::string messageInput)
+{
+    prepareMessage(&messageInput, 'T');
+    int sentAmount = send(clientSocket, messageInput.c_str(), messageInput.size() + 1, 0);
+    if (sentAmount == -1)
+    {
+        std::runtime_error e(strerror(errno));
+        throw e;
+    }
+    else if (sentAmount < static_cast<int>(messageInput.size() + 1))
+    {
+        std::cerr << "Failed to send full message\n";
+        // deal with this better
+    }
+
+    return sentAmount;
+}
