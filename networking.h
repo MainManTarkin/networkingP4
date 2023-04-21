@@ -23,11 +23,14 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdexcept>
+#include <vector>
 
 // defines
 const size_t recvSocketBufferSize = 500;
+//ACK recv timeout
 const time_t timeOutSec = 10;
 const time_t timeOutUSec = 0;
+
 const int closedSocketVal = -1;
 
 /* RCnetworking
@@ -139,13 +142,14 @@ private:
 
     void prepareMessage(std::string *messageToSend, char command);
 
+    int handleRecv();
+
     // variables
     int clientSocket = -1;
+    int highFileDescriptor;
+    //vector of strings recv'ed
 
-    //buffer and its size variable
-    char *bufferRecv;
-
-    size_t bufferSize = recvSocketBufferSize;
+    std::vector<std::string> recvedStrings;
 
     //adderinfo and it list used placed here for constructer and deconstructer use
     struct addrinfo basedInfo;
@@ -153,7 +157,7 @@ private:
     struct addrinfo *addList = nullptr;
 
     //used by the deconstructer to determine what it has to free
-    bool bufferAllocated = false;
     bool socketCreated = false;
     bool getAdderListCreated = false;
+
 };

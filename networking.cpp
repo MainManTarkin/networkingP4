@@ -1,6 +1,7 @@
 #include "networking.h"
 
 const char ackMessage[] = "A|OK\n";
+#define intermediateBufferSize 50
 
 void RCnetworking::prepareMessage(std::string *messageToSend, char command)
 {
@@ -33,27 +34,15 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     timeoutVal.tv_sec = timeOutSec;
     timeoutVal.tv_usec = timeOutUSec;
 
-    fd_set readfds;
-
     int highFileDescriptor = 0;
     int selectRV = 0;
 
+    fd_set readfds;
+
+    char ackRecvBuffer[20];
+
+    memset(ackRecvBuffer, 0, sizeof(ackRecvBuffer));
     memset(&basedInfo, 0, sizeof(struct addrinfo));
-
-    // set up buffer
-
-    try
-    {
-
-        bufferRecv = new char[recvSocketBufferSize];
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << e.what() << std::endl;
-        throw std::runtime_error("failed allocation of recv buffer");
-    }
-
-    bufferAllocated = true;
 
     // set socket for tcp and dont care about ip version
     basedInfo.ai_family = AF_UNSPEC;
@@ -63,7 +52,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     {
         std::cerr << "RCnetworking() - problem with getaddrinfo(): Line: " << (__LINE__ - 2) << "| return code: " << gai_strerror(getAddressReturnVal) << std::endl;
 
-        this->~RCnetworking();// Calling this manually feels both unnecessary and potentially dangerous but IDK for sure -- JS
+        this->~RCnetworking(); // Calling this manually feels both unnecessary and potentially dangerous but IDK for sure -- JS
 
         throw std::runtime_error("you put in the wrong input num-nuts");
     }
@@ -150,7 +139,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     else
     {
 
-        if ((bytesRecv = recv(clientSocket, bufferRecv, bufferSize, 0)) == -1)
+        if ((bytesRecv = recv(clientSocket, ackRecvBuffer, sizeof(ackRecvBuffer), 0)) == -1)
         {
 
             if (errno != EAGAIN || errno != EWOULDBLOCK)
@@ -164,15 +153,13 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
         else
         {
 
-            if (strncmp(bufferRecv, ackMessage, sizeof(ackMessage)))
+            if (strncmp(ackRecvBuffer, ackMessage, sizeof(ackMessage)))
             {
                 this->~RCnetworking();
                 throw std::runtime_error("server sent bad ack message");
             }
         }
     }
-
-    memset(bufferRecv, 0, bufferSize);
 }
 
 RCnetworking::~RCnetworking()
@@ -198,12 +185,6 @@ RCnetworking::~RCnetworking()
         }
     }
 
-    if (bufferAllocated)
-    {
-
-        delete[] bufferRecv;
-    }
-
     if (getAdderListCreated)
     {
 
@@ -227,4 +208,128 @@ int RCnetworking::sendMessage(std::string messageInput)
     }
 
     return sentAmount;
+}
+
+int RCnetworking::handleRecv()
+{
+
+    int bytesRecv = 0;
+    int totalBytesRecv = 0;
+
+
+    char intermediateBuffer[intermediateBufferSize];
+
+    std::string recvMessage;
+    size_t startOfMessage = 0;
+    size_t endOfMessage = 0;
+
+    memset(intermediateBuffer, 0, intermediateBufferSize);
+
+    if ((bytesRecv = recv(clientSocket, intermediateBuffer, intermediateBufferSize, 0)) == -1)
+    {
+
+        if (errno != EAGAIN || errno != EWOULDBLOCK)
+        {
+
+            throw std::runtime_error(strerror(errno));
+        }
+    }
+    else if (bytesRecv > 0)
+    {
+        recvMessage.append(intermediateBuffer);
+        totalBytesRecv += bytesRecv;
+
+        if (bytesRecv >= intermediateBufferSize)
+        {
+            
+
+            while (bytesRecv)
+            {
+                memset(intermediateBuffer,0,intermediateBufferSize);
+
+
+                if ((bytesRecv = recv(clientSocket, intermediateBuffer, intermediateBufferSize, 0)) == -1)
+                {
+
+                    if (errno != EAGAIN || errno != EWOULDBLOCK)
+                    {
+
+                        throw std::runtime_error(strerror(errno));
+                    }
+                    else
+                    {
+
+                        break;
+                    }
+                }else if(bytesRecv > 0){
+
+                    totalBytesRecv += bytesRecv;
+                    recvMessage.append(intermediateBuffer);
+
+                }
+            }
+        }
+
+        if(!strncmp(recvMessage.c_str(),"T|",2)){
+
+            startOfMessage = 2;
+
+            for (size_t i = startOfMessage; i < recvMessage.size(); i++)
+            {
+                
+                if(recvMessage[i] == '\n'){
+
+                    endOfMessage = (i - 1);
+                    break;
+
+                }
+
+            }
+
+           
+            
+            recvedStrings.push_back(recvMessage.substr(startOfMessage,endOfMessage));
+            
+            
+        }
+        
+        
+    }
+
+    
+
+    return totalBytesRecv;
+}
+
+
+bool RCnetworking::checkForRecv()
+{
+
+    bool wasThereData = false;
+
+    try
+    {
+        if(handleRecv()){
+
+            wasThereData = true;
+
+        }
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        throw std::runtime_error("checkForRecv() - failure in handleRecv()");
+    }
+    
+    return wasThereData;
+}
+
+std::string RCnetworking::getMessage(){
+
+    std::string fetchedString(recvedStrings[recvedStrings.size() - 1]);
+
+    recvedStrings.pop_back();
+
+    return fetchedString;
+
 }

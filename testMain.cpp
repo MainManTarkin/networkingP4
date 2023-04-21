@@ -101,6 +101,14 @@ int main(int argc, char* argv[]){
         testNetworkingAPI.sendMessage("Hello!");
         std::this_thread::sleep_for(std::chrono::milliseconds(500)); // delay to avoid crashing Perry's server
 
+        while (!testNetworkingAPI.checkForRecv())
+        {
+            
+            ;
+
+        }
+        
+        std::cout << testNetworkingAPI.getMessage() << std::endl;
 
     }
     catch(const std::exception& e)
