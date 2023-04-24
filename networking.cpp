@@ -223,7 +223,7 @@ int RCnetworking::handleRecv()
 
     memset(intermediateBuffer, 0, intermediateBufferSize);
 
-    if ((bytesRecv = recv(clientSocket, intermediateBuffer, intermediateBufferSize, 0)) == -1)
+    if ((bytesRecv = recv(clientSocket, intermediateBuffer, (sizeof(intermediateBuffer) - 1), 0)) == -1)
     {
 
         if (errno != EAGAIN || errno != EWOULDBLOCK)
@@ -236,8 +236,9 @@ int RCnetworking::handleRecv()
     {
         recvMessage.append(intermediateBuffer);
         totalBytesRecv += bytesRecv;
+        printf("recv string: %s\n bytes recvd: %d\n", intermediateBuffer, bytesRecv);
 
-        if (bytesRecv >= intermediateBufferSize)
+        if (bytesRecv >= (int)(sizeof(intermediateBuffer) - 1))
         {
             
 
@@ -245,8 +246,8 @@ int RCnetworking::handleRecv()
             {
                 memset(intermediateBuffer,0,intermediateBufferSize);
 
-
-                if ((bytesRecv = recv(clientSocket, intermediateBuffer, intermediateBufferSize, 0)) == -1)
+                
+                if ((bytesRecv = recv(clientSocket, intermediateBuffer, (sizeof(intermediateBuffer) - 1), 0)) == -1)
                 {
 
                     if (errno != EAGAIN || errno != EWOULDBLOCK)
@@ -263,8 +264,10 @@ int RCnetworking::handleRecv()
 
                     totalBytesRecv += bytesRecv;
                     recvMessage.append(intermediateBuffer);
-
+                    
                 }
+
+                
             }
         }
 
@@ -298,7 +301,6 @@ int RCnetworking::handleRecv()
 
     return totalBytesRecv;
 }
-
 
 bool RCnetworking::checkForRecv()
 {
