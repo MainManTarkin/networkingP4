@@ -52,8 +52,6 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     {
         std::cerr << "RCnetworking() - problem with getaddrinfo(): Line: " << (__LINE__ - 2) << "| return code: " << gai_strerror(getAddressReturnVal) << std::endl;
 
-        this->~RCnetworking(); // Calling this manually feels both unnecessary and potentially dangerous but IDK for sure -- JS
-
         throw std::runtime_error("you put in the wrong input num-nuts");
     }
 
@@ -87,7 +85,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     if (addList == NULL)
     {
         std::cerr << "RCnetworking() - failed to connect to server" << std::endl;
-        this->~RCnetworking();
+       
         throw std::runtime_error("check your internet connection cause it probs sucks num-nuts");
     }
 
@@ -97,7 +95,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     {
 
         perror("prepareClient() - problem setting the socket to non-blocking: ");
-        this->~RCnetworking();
+
         throw std::runtime_error("you can not even block a socket num-nuts");
     }
 
@@ -107,7 +105,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     {
 
         perror("RCnetworking() - problem with send(): ");
-        this->~RCnetworking();
+
         throw std::runtime_error("your grandmas potato cant even send the message num-nuts");
     }
 
@@ -128,12 +126,12 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     {
 
         perror("RCnetworking() - problem with select(): ");
-        this->~RCnetworking();
+  
         throw std::runtime_error("you could not even select() a functional socket num-nuts");
     }
     else if (!selectRV)
     {
-        this->~RCnetworking();
+    
         throw std::runtime_error("select() timed out for receiving ack message from server ");
     }
     else
@@ -146,7 +144,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
             {
 
                 perror("RCnetworking() - problem with recv(): ");
-                this->~RCnetworking();
+   
                 throw std::runtime_error("your computer recv()s messages like a drunken sailor num-nuts");
             }
         }
@@ -155,7 +153,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
 
             if (strncmp(ackRecvBuffer, ackMessage, sizeof(ackMessage)))
             {
-                this->~RCnetworking();
+ 
                 throw std::runtime_error("server sent bad ack message");
             }
         }
