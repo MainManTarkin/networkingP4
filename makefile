@@ -13,7 +13,7 @@ else
 endif
 
 CFLAGS	= -Wall -Werror --pedantic -std=c++11 -g $(MACFLAGS)
-COBJS	= client.o
+COBJS	= client.o logger.o networking.o
 srcs	= $(wildcard *.cpp)
 deps	= $(srcs:.cpp=.d)
 
