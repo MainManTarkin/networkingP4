@@ -67,3 +67,5 @@ if [ $GOTARGS -eq 0 ]; then
   fi
 
 fi
+
+exit $RETURNVALUE

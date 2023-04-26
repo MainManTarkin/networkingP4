@@ -1,6 +1,6 @@
 #include "networking.h"
 
-const char ackMessage[] = "A|OK\n";
+static const char ackMessage[] = "A|OK\n";
 #define intermediateBufferSize 50
 
 void RCnetworking::prepareMessage(std::string *messageToSend, char command)
@@ -85,7 +85,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     if (addList == NULL)
     {
         std::cerr << "RCnetworking() - failed to connect to server" << std::endl;
-       
+
         throw std::runtime_error("check your internet connection cause it probs sucks num-nuts");
     }
 
@@ -126,12 +126,12 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     {
 
         perror("RCnetworking() - problem with select(): ");
-  
+
         throw std::runtime_error("you could not even select() a functional socket num-nuts");
     }
     else if (!selectRV)
     {
-    
+
         throw std::runtime_error("select() timed out for receiving ack message from server ");
     }
     else
@@ -144,16 +144,16 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
             {
 
                 perror("RCnetworking() - problem with recv(): ");
-   
+
                 throw std::runtime_error("your computer recv()s messages like a drunken sailor num-nuts");
             }
         }
         else
         {
-
+            
             if (strncmp(ackRecvBuffer, ackMessage, sizeof(ackMessage)))
             {
- 
+
                 throw std::runtime_error("server sent bad ack message");
             }
         }
@@ -214,7 +214,6 @@ int RCnetworking::handleRecv()
     int bytesRecv = 0;
     int totalBytesRecv = 0;
 
-
     char intermediateBuffer[intermediateBufferSize];
 
     std::string recvMessage;
@@ -232,21 +231,25 @@ int RCnetworking::handleRecv()
             throw std::runtime_error(strerror(errno));
         }
     }
+    else if(!bytesRecv){// handle server disconnection
+
+        
+        throw std::runtime_error("server dropped connection");
+
+    }
     else if (bytesRecv > 0)
     {
         recvMessage.append(intermediateBuffer);
         totalBytesRecv += bytesRecv;
-        printf("recv string: %s\n bytes recvd: %d\n", intermediateBuffer, bytesRecv);
+        
 
         if (bytesRecv >= (int)(sizeof(intermediateBuffer) - 1))
         {
-            
 
             while (bytesRecv)
             {
-                memset(intermediateBuffer,0,intermediateBufferSize);
+                memset(intermediateBuffer, 0, intermediateBufferSize);
 
-                
                 if ((bytesRecv = recv(clientSocket, intermediateBuffer, (sizeof(intermediateBuffer) - 1), 0)) == -1)
                 {
 
@@ -260,44 +263,46 @@ int RCnetworking::handleRecv()
 
                         break;
                     }
-                }else if(bytesRecv > 0){
+                }
+                else if (bytesRecv > 0)
+                {
 
                     totalBytesRecv += bytesRecv;
                     recvMessage.append(intermediateBuffer);
-                    
                 }
-
-                
             }
         }
 
-        if(!strncmp(recvMessage.c_str(),"T|",2)){
-
-            startOfMessage = 2;
-
-            for (size_t i = startOfMessage; i < recvMessage.size(); i++)
+        for (size_t c = 0; c < recvMessage.size(); c++)
+        {
+            std::cout << recvMessage.c_str()[c] << std::endl;
+            if (!strncmp((recvMessage.c_str() + c), "T|", 2))
             {
-                
-                if(recvMessage[i] == '\n'){
 
-                    endOfMessage = (i - 1);
-                    break;
+                startOfMessage = c + 2;
 
+                for (size_t i = startOfMessage; i < recvMessage.size(); i++)
+                {
+
+                    if (recvMessage[i] == '\n')
+                    {
+                        c = i;
+                        endOfMessage = (i - 1);
+                        break;
+                    }
                 }
 
+                recvedStrings.push_back(recvMessage.substr(startOfMessage, endOfMessage));
             }
-
-           
-            
-            recvedStrings.push_back(recvMessage.substr(startOfMessage,endOfMessage));
-            
-            
         }
-        
-        
     }
-
     
+    if(!recvedStrings.size()){
+        //we may have recieved bytes but we do not have a complete message yet
+        //set the return to zero to indicate to the user
+        totalBytesRecv = 0;
+
+    }
 
     return totalBytesRecv;
 }
@@ -309,27 +314,35 @@ bool RCnetworking::checkForRecv()
 
     try
     {
-        if(handleRecv()){
+        if (handleRecv())
+        {
 
             wasThereData = true;
-
         }
     }
-    catch(const std::exception& e)
+    catch (const std::exception &e)
     {
         std::cerr << e.what() << std::endl;
         throw std::runtime_error("checkForRecv() - failure in handleRecv()");
     }
-    
+
     return wasThereData;
 }
 
-std::string RCnetworking::getMessage(){
+//returns empty string if there are no messages in vector
+std::string RCnetworking::getMessage()
+{
+    
+    std::string fetchedString;
 
-    std::string fetchedString(recvedStrings[recvedStrings.size() - 1]);
+    if(recvedStrings.size()){//only get a message if there is one in the vector 
 
-    recvedStrings.pop_back();
+        fetchedString = recvedStrings[recvedStrings.size() - 1];
+
+        recvedStrings.pop_back();
+
+    }
+    
 
     return fetchedString;
-
 }
