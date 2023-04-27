@@ -8,22 +8,27 @@ Logger::Logger(std::string fileName)
         throw std::runtime_error("Error when initializing log file \"" + fileName + "\" ");
     }
     
-    fileStream << "Log file begin\n";
+    // This message will indicate when the file is correctly initialized in the constructor.
+    fileStream << "Log file begin\n"; 
     lastMessage = "Log file begin\n";
 }
 //--
 Logger::Logger(const char* fileName) : Logger(std::string(fileName))
 {   
+    // Just calls the string constructor
 }
 //--
 Logger::~Logger()
 {
-    fileStream << "Log file closing...\n";
+    // This message will indicate the file closed via the deconstructor, and not some other failure
+    fileStream << "Log file closing...\n"; 
     fileStream.close();
 }
 //--
 bool Logger::AddMessageToLog(std::string message)
 {
+    // Note: good() will return false if any of the fstream's stateflags are set (badbit, eofbit or failbit)
+    // Will want to consider changing this because a stream issue could occur before or after the write
     if(fileStream.good())
     {
         fileStream << message << "\n";

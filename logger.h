@@ -28,7 +28,7 @@ class Logger
             These methods will add the provided message string to the log file
             Returns:
             -> True, if the message was successfully added to the opened file
-            -> False, if the file was able to be written to
+            -> False, if the file was unable to be written to
         */
         bool AddMessageToLog(std::string message);
         bool AddMessageToLog(const char* message);
