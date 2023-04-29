@@ -41,7 +41,7 @@ done
 #ugly bash if else loop
 if [ $GOTARGS -eq 0 ]; then
 
-  g++ $INPUTNAMES networking.cpp -o $OUTPUTNAME -Wall -Werror --pedantic -std=c++11 -g 
+  g++ $INPUTNAMES networking.cpp logger.cpp -o $OUTPUTNAME -Wall -Werror --pedantic -std=c++11 -g 
 
   RETURNVALUE=$?
 

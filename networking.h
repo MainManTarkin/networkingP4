@@ -25,6 +25,8 @@
 #include <stdexcept>
 #include <vector>
 
+#include "logger.h"
+
 
 
 
@@ -162,5 +164,10 @@ private:
     //used by the deconstructer to determine what it has to free
     bool socketCreated = false;
     bool getAdderListCreated = false;
+
+    // Networking logger instance
+    // Do we want to keep the Networking class as using its own logger, or do
+    // we want to have the entire chat program use one logger instance? ~ JS
+    Logger log;
 
 };
