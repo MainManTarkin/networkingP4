@@ -64,6 +64,7 @@
         "timer": "cpp",
         "future": "cpp",
         "mutex": "cpp",
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "fstream": "cpp"
     }
 }

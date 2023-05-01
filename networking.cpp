@@ -216,10 +216,10 @@ int RCnetworking::handleRecv()
 
     char intermediateBuffer[intermediateBufferSize];
 
-    std::string recvMessage;
     size_t startOfMessage = 0;
     size_t endOfMessage = 0;
-
+    size_t messageIndex = 0;
+    
     memset(intermediateBuffer, 0, intermediateBufferSize);
 
     if ((bytesRecv = recv(clientSocket, intermediateBuffer, (sizeof(intermediateBuffer) - 1), 0)) == -1)
@@ -273,9 +273,9 @@ int RCnetworking::handleRecv()
             }
         }
 
-        for (size_t c = 0; c < recvMessage.size(); c++)
+        for (size_t c = messageIndex; c < recvMessage.size(); c++)
         {
-            std::cout << recvMessage.c_str()[c] << std::endl;
+            
             if (!strncmp((recvMessage.c_str() + c), "T|", 2))
             {
 
@@ -288,11 +288,13 @@ int RCnetworking::handleRecv()
                     {
                         c = i;
                         endOfMessage = (i - 1);
+                        messageIndex = i + 1;
+                        recvedStrings.push_back(recvMessage.substr(startOfMessage, endOfMessage));
                         break;
                     }
                 }
 
-                recvedStrings.push_back(recvMessage.substr(startOfMessage, endOfMessage));
+                
             }
         }
     }
@@ -301,6 +303,10 @@ int RCnetworking::handleRecv()
         //we may have recieved bytes but we do not have a complete message yet
         //set the return to zero to indicate to the user
         totalBytesRecv = 0;
+
+    }else{
+
+        recvMessage = recvMessage.substr(messageIndex);
 
     }
 
@@ -314,7 +320,9 @@ bool RCnetworking::checkForRecv()
 
     try
     {
-        if (handleRecv())
+        handleRecv();
+
+        if (recvedStrings.size() > 0)
         {
 
             wasThereData = true;

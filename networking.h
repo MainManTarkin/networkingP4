@@ -151,9 +151,9 @@ private:
     int clientSocket = -1;
     int highFileDescriptor;
     //vector of strings recv'ed
-
     std::vector<std::string> recvedStrings;
-
+    //holds the current received string packets 
+    std::string recvMessage;
     //adderinfo and it list used placed here for constructer and deconstructer use
     struct addrinfo basedInfo;
     struct addrinfo *serverAddrInfo = nullptr;
