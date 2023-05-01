@@ -1,4 +1,5 @@
 #include "networking.h"
+#include <sstream>
 
 static const char ackMessage[] = "A|OK\n";
 #define intermediateBufferSize 50
@@ -23,7 +24,11 @@ void RCnetworking::prepareMessage(std::string *messageToSend, char command)
     }
 }
 
-RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std::string userNameInput)
+// If you're unfamiliar with the syntax here, I'm initializing the 'log' variable
+// by calling the Logger constructor
+// This way it can just stay as a regular member and not a pointer or anything weird
+RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std::string userNameInput) :
+    log("networking-log.txt")
 {
 
     int getAddressReturnVal = 0;
@@ -50,8 +55,10 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
 
     if ((getAddressReturnVal = getaddrinfo(addressInput.c_str(), portInput.c_str(), &basedInfo, &serverAddrInfo)) != 0)
     {
-        std::cerr << "RCnetworking() - problem with getaddrinfo(): Line: " << (__LINE__ - 2) << "| return code: " << gai_strerror(getAddressReturnVal) << std::endl;
-
+        std::stringstream ss;
+        ss << "RCnetworking() - problem with getaddrinfo(): Line: " << (__LINE__ - 2)
+           << "| return code: " << gai_strerror(getAddressReturnVal);
+        log.AddMessageToLog(ss.str());
         throw std::runtime_error("you put in the wrong input num-nuts");
     }
 
@@ -61,8 +68,9 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     {
         if ((clientSocket = socket(addList->ai_family, addList->ai_socktype, addList->ai_protocol)) == -1)
         {
-            perror("RCnetworking() - problem with socket(): ");
-
+            std::stringstream ss;
+            ss << "RCnetworking() - problem with socket(): " << strerror(errno);
+            log.AddMessageToLog(ss.str());
             continue;
         }
 
@@ -70,10 +78,10 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
         {
             if (close(clientSocket))
             {
-
-                perror("RCnetworking() - problem with close(): ");
-
-                std::cerr << "Line: " << (__LINE__ - 5) << std::endl;
+                std::stringstream ss;
+                ss << "RCnetworking() - problem with close(): " << strerror(errno)
+                   << std::endl << "Line: " << (__LINE__ - 5);
+                log.AddMessageToLog(ss.str());
             }
             clientSocket = closedSocketVal;
             continue;
@@ -84,7 +92,9 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
 
     if (addList == NULL)
     {
-        std::cerr << "RCnetworking() - failed to connect to server" << std::endl;
+        std::stringstream ss;
+        ss << "RCnetworking() - failed to connect to server";
+        log.AddMessageToLog(ss.str());
 
         throw std::runtime_error("check your internet connection cause it probs sucks num-nuts");
     }
@@ -93,9 +103,10 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
 
     if (fcntl(clientSocket, F_SETFL, O_NONBLOCK) == -1)
     {
-
-        perror("prepareClient() - problem setting the socket to non-blocking: ");
-
+        std::stringstream ss;
+        ss << "prepareClient() - problem setting the socket to non-blocking: "
+           << strerror(errno);
+        log.AddMessageToLog(ss.str());
         throw std::runtime_error("you can not even block a socket num-nuts");
     }
 
@@ -103,8 +114,9 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
 
     if ((bytesSent = send(clientSocket, userNameInput.c_str(), userNameInput.size(), 0)) == -1)
     {
-
-        perror("RCnetworking() - problem with send(): ");
+        std::stringstream ss;
+        ss << "RCnetworking() - problem with send(): " << strerror(errno);
+        log.AddMessageToLog(ss.str());
 
         throw std::runtime_error("your grandmas potato cant even send the message num-nuts");
     }
@@ -124,8 +136,9 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
 
     if ((selectRV = select(highFileDescriptor, &readfds, NULL, NULL, &timeoutVal)) == -1)
     {
-
-        perror("RCnetworking() - problem with select(): ");
+        std::stringstream ss;
+        ss << "RCnetworking() - problem with select(): " << strerror(errno);
+        log.AddMessageToLog(ss.str());
 
         throw std::runtime_error("you could not even select() a functional socket num-nuts");
     }
@@ -142,15 +155,15 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
 
             if (errno != EAGAIN || errno != EWOULDBLOCK)
             {
-
-                perror("RCnetworking() - problem with recv(): ");
+                std::stringstream ss;
+                ss << "RCnetworking() - problem with recv(): " << strerror(errno);
 
                 throw std::runtime_error("your computer recv()s messages like a drunken sailor num-nuts");
             }
         }
         else
         {
-            
+
             if (strncmp(ackRecvBuffer, ackMessage, sizeof(ackMessage)))
             {
 
@@ -172,14 +185,18 @@ RCnetworking::~RCnetworking()
 
         if (send(clientSocket, goodbyeMessage.c_str(), goodbyeMessage.size(), 0) == -1)
         {
-
-            perror("~RCnetworking() - problem with send()ing goodbye message: ");
+            std::stringstream ss;
+            ss << "~RCnetworking() - problem with send()ing goodbye message: "
+               << strerror(errno);
+            log.AddMessageToLog(ss.str());
         }
 
         if (close(clientSocket))
         {
-
-            perror("~RCnetworking() - problem with close()ing socket: ");
+            std::stringstream ss;
+            ss << "~RCnetworking() - problem with close()ing socket: "
+               << strerror(errno);
+            log.AddMessageToLog(ss.str());
         }
     }
 
@@ -201,7 +218,9 @@ int RCnetworking::sendMessage(std::string messageInput)
     }
     else if (sentAmount < static_cast<int>(messageInput.size() + 1))
     {
-        std::cerr << "Failed to send full message\n";
+        std::stringstream ss;
+        ss << "Failed to send full message";
+        log.AddMessageToLog(ss.str());
         // deal with this better
     }
 
@@ -233,7 +252,7 @@ int RCnetworking::handleRecv()
     }
     else if(!bytesRecv){// handle server disconnection
 
-        
+
         throw std::runtime_error("server dropped connection");
 
     }
@@ -241,7 +260,7 @@ int RCnetworking::handleRecv()
     {
         recvMessage.append(intermediateBuffer);
         totalBytesRecv += bytesRecv;
-        
+
 
         if (bytesRecv >= (int)(sizeof(intermediateBuffer) - 1))
         {
@@ -298,7 +317,7 @@ int RCnetworking::handleRecv()
             }
         }
     }
-    
+
     if(!recvedStrings.size()){
         //we may have recieved bytes but we do not have a complete message yet
         //set the return to zero to indicate to the user
@@ -330,7 +349,7 @@ bool RCnetworking::checkForRecv()
     }
     catch (const std::exception &e)
     {
-        std::cerr << e.what() << std::endl;
+        log.AddMessageToLog(e.what());
         throw std::runtime_error("checkForRecv() - failure in handleRecv()");
     }
 
@@ -340,17 +359,17 @@ bool RCnetworking::checkForRecv()
 //returns empty string if there are no messages in vector
 std::string RCnetworking::getMessage()
 {
-    
+
     std::string fetchedString;
 
-    if(recvedStrings.size()){//only get a message if there is one in the vector 
+    if(recvedStrings.size()){//only get a message if there is one in the vector
 
         fetchedString = recvedStrings[recvedStrings.size() - 1];
 
         recvedStrings.pop_back();
 
     }
-    
+
 
     return fetchedString;
 }
