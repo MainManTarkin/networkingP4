@@ -29,8 +29,7 @@ void RCnetworking::prepareMessage(std::string *messageToSend, char command)
 // If you're unfamiliar with the syntax here, I'm initializing the 'log' variable
 // by calling the Logger constructor
 // This way it can just stay as a regular member and not a pointer or anything weird
-RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std::string userNameInput) :
-    log("networking-log.txt")
+RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std::string userNameInput) : log("networking-log.txt")
 {
 
     int getAddressReturnVal = 0;
@@ -53,17 +52,16 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
 
     std::stringstream ss;
 
-    //check user input
+    // check user input
     int portInt = std::stoi(portInput);
-    //check for vaild user port inputs
-    if(portInt > maxPortNum || portInt < minPortNum){
+    // check for vaild user port inputs
+    if (portInt > maxPortNum || portInt < minPortNum)
+    {
 
         ss << "RCnetworking() - gave invaild port number: " << portInt;
         log.AddMessageToLog(ss.str());
         throw std::runtime_error("invaild port number given to RCnetworking()");
-
     }
-    
 
     // set socket for tcp and dont care about ip version
     basedInfo.ai_family = AF_UNSPEC;
@@ -71,7 +69,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
 
     if ((getAddressReturnVal = getaddrinfo(addressInput.c_str(), portInput.c_str(), &basedInfo, &serverAddrInfo)))
     {
-        
+
         ss << "RCnetworking() - problem with getaddrinfo(): Line: " << (__LINE__ - 2)
            << "| return code: " << gai_strerror(getAddressReturnVal);
         log.AddMessageToLog(ss.str());
@@ -84,7 +82,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     {
         if ((clientSocket = socket(addList->ai_family, addList->ai_socktype, addList->ai_protocol)) == -1)
         {
-            
+
             ss << "RCnetworking() - problem with socket(): " << strerror(errno);
             log.AddMessageToLog(ss.str());
             continue;
@@ -94,9 +92,10 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
         {
             if (close(clientSocket))
             {
-                
+
                 ss << "RCnetworking() - problem with close(): " << strerror(errno)
-                   << std::endl << "Line: " << (__LINE__ - 5);
+                   << std::endl
+                   << "Line: " << (__LINE__ - 5);
                 log.AddMessageToLog(ss.str());
             }
             clientSocket = closedSocketVal;
@@ -108,7 +107,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
 
     if (addList == NULL)
     {
-        
+
         ss << "RCnetworking() - failed to connect to server with address: " << addressInput;
         log.AddMessageToLog(ss.str());
 
@@ -119,7 +118,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
 
     if (fcntl(clientSocket, F_SETFL, O_NONBLOCK) == -1)
     {
-        
+
         ss << "prepareClient() - problem setting the socket to non-blocking: "
            << strerror(errno);
         log.AddMessageToLog(ss.str());
@@ -130,7 +129,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
 
     if ((bytesSent = send(clientSocket, userNameInput.c_str(), userNameInput.size(), 0)) == -1)
     {
-        
+
         ss << "RCnetworking() - problem with send(): " << strerror(errno);
         log.AddMessageToLog(ss.str());
 
@@ -152,7 +151,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
 
     if ((selectRV = select(highFileDescriptor, &readfds, NULL, NULL, &timeoutVal)) == -1)
     {
-        
+
         ss << "RCnetworking() - problem with select(): " << strerror(errno);
         log.AddMessageToLog(ss.str());
 
@@ -171,7 +170,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
 
             if (errno != EAGAIN || errno != EWOULDBLOCK)
             {
-                
+
                 ss << "RCnetworking() - problem with recv(): " << strerror(errno);
 
                 throw std::runtime_error("your computer recv()s messages like a drunken sailor num-nuts");
@@ -254,7 +253,7 @@ int RCnetworking::handleRecv()
     size_t startOfMessage = 0;
     size_t endOfMessage = 0;
     size_t messageIndex = 0;
-    
+
     memset(intermediateBuffer, 0, intermediateBufferSize);
 
     if ((bytesRecv = recv(clientSocket, intermediateBuffer, (sizeof(intermediateBuffer) - 1), 0)) == -1)
@@ -266,17 +265,15 @@ int RCnetworking::handleRecv()
             throw std::runtime_error(strerror(errno));
         }
     }
-    else if(!bytesRecv){// handle server disconnection
-
+    else if (!bytesRecv)
+    { // handle server disconnection
 
         throw std::runtime_error("server dropped connection");
-
     }
     else if (bytesRecv > 0)
     {
         recvMessage.append(intermediateBuffer);
         totalBytesRecv += bytesRecv;
-
 
         if (bytesRecv >= (int)(sizeof(intermediateBuffer) - 1))
         {
@@ -310,7 +307,7 @@ int RCnetworking::handleRecv()
 
         for (size_t c = messageIndex; c < recvMessage.size(); c++)
         {
-            
+
             if (!strncmp((recvMessage.c_str() + c), "T|", 2))
             {
 
@@ -328,21 +325,20 @@ int RCnetworking::handleRecv()
                         break;
                     }
                 }
-
-                
             }
         }
     }
 
-    if(!recvedStrings.size()){
-        //we may have recieved bytes but we do not have a complete message yet
-        //set the return to zero to indicate to the user
+    if (!recvedStrings.size())
+    {
+        // we may have recieved bytes but we do not have a complete message yet
+        // set the return to zero to indicate to the user
         totalBytesRecv = 0;
-
-    }else{
+    }
+    else
+    {
 
         recvMessage = recvMessage.substr(messageIndex);
-
     }
 
     return totalBytesRecv;
@@ -372,20 +368,19 @@ bool RCnetworking::checkForRecv()
     return wasThereData;
 }
 
-//returns empty string if there are no messages in vector
+// returns empty string if there are no messages in vector
 std::string RCnetworking::getMessage()
 {
 
     std::string fetchedString;
 
-    if(recvedStrings.size()){//only get a message if there is one in the vector
+    if (recvedStrings.size())
+    { // only get a message if there is one in the vector
 
         fetchedString = recvedStrings[recvedStrings.size() - 1];
 
         recvedStrings.pop_back();
-
     }
-
 
     return fetchedString;
 }
