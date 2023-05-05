@@ -145,6 +145,17 @@ public:
 private:
     // functions
 
+
+    /*prepareMessage()
+    *   This function is responsible for appending or forming a message to be sent to the server
+    *   its two parameters
+    *   std::string *messageToSend - a pointer to the message string class that will be sent to the server
+    *   char command - a single character that is used to determine what to do with the message
+    *       ----Commands----
+    *           G - creates goodbyte message to send to server
+    *           T(any other char) - appends the "T|" header to a string and "\n" to the end of the message
+    * returns nothings and throws no exceptions
+    */
     void prepareMessage(std::string *messageToSend, char command);
 
     int handleRecv();

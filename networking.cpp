@@ -245,14 +245,17 @@ int RCnetworking::sendMessage(std::string messageInput)
 int RCnetworking::handleRecv()
 {
 
-    int bytesRecv = 0;
-    int totalBytesRecv = 0;
+    ssize_t bytesRecv = 0;
+    ssize_t totalBytesRecv = 0;
 
+    //used to hold bytes from recv() before appending them to main string buffer recvMessage
     char intermediateBuffer[intermediateBufferSize];
 
     size_t startOfMessage = 0;
     size_t endOfMessage = 0;
     size_t messageIndex = 0;
+
+    std::stringstream ss;
 
     memset(intermediateBuffer, 0, intermediateBufferSize);
 
@@ -261,33 +264,42 @@ int RCnetworking::handleRecv()
 
         if (errno != EAGAIN || errno != EWOULDBLOCK)
         {
-
+            ss << "handleRecv() - problem with recv at line: " << (__LINE__ - 5) ;
+            log.AddMessageToLog(ss.str());
             throw std::runtime_error(strerror(errno));
         }
     }
     else if (!bytesRecv)
     { // handle server disconnection
 
+
+        ss << "handleRecv() - problem with recv at line: " << (__LINE__ - 14);
+        log.AddMessageToLog(ss.str());
         throw std::runtime_error("server dropped connection");
     }
     else if (bytesRecv > 0)
     {
+        //add are recevied message to the string buffer 
         recvMessage.append(intermediateBuffer);
         totalBytesRecv += bytesRecv;
 
-        if (bytesRecv >= (int)(sizeof(intermediateBuffer) - 1))
-        {
+        if (bytesRecv >= (ssize_t)(sizeof(intermediateBuffer) - 1))//for handling extra recvs
+        {//keep looping until recv returns zero bytes
 
             while (bytesRecv)
             {
+                
                 memset(intermediateBuffer, 0, intermediateBufferSize);
 
                 if ((bytesRecv = recv(clientSocket, intermediateBuffer, (sizeof(intermediateBuffer) - 1), 0)) == -1)
                 {
-
+                    //the if block handles any errors given by recv() 
+                    //other wise the errors are related to non-blocking returning zero bytes
+                    //break the loop when there is no more to recv
                     if (errno != EAGAIN || errno != EWOULDBLOCK)
                     {
-
+                        ss << "handleRecv() - problem with recv at line: " << (__LINE__ - 7);
+                        log.AddMessageToLog(ss.str());
                         throw std::runtime_error(strerror(errno));
                     }
                     else
@@ -305,13 +317,20 @@ int RCnetworking::handleRecv()
             }
         }
 
+        //string buffer parser
+        //the string buffer recvMessage is parsed to find any message it may contain
+        //since all messages begin with T| this is the first thing it looks for
+        //when found it moves to an inner loop that looks for the ending point of a message (if any)
+        //when a message is found a substring of the message (not including the "T|" or "\n" is place in messsage vector)
+        //the main loop begins iterating again, with its index being after the end of the last message
+
         for (size_t c = messageIndex; c < recvMessage.size(); c++)
         {
 
             if (!strncmp((recvMessage.c_str() + c), "T|", 2))
             {
 
-                startOfMessage = c + 2;
+                startOfMessage = (c + 2);
 
                 for (size_t i = startOfMessage; i < recvMessage.size(); i++)
                 {
@@ -320,7 +339,7 @@ int RCnetworking::handleRecv()
                     {
                         c = i;
                         endOfMessage = (i - 1);
-                        messageIndex = i + 1;
+                        messageIndex = (i + 1);
                         recvedStrings.push_back(recvMessage.substr(startOfMessage, endOfMessage));
                         break;
                     }
@@ -337,7 +356,7 @@ int RCnetworking::handleRecv()
     }
     else
     {
-
+        //remove the portion string buffer that contained messages that were parsed
         recvMessage = recvMessage.substr(messageIndex);
     }
 
