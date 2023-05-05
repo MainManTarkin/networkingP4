@@ -82,7 +82,7 @@ public:
      *   well. Other exceptions may be thrown by other functions called in the
      *   constructor.
      */
-    RCnetworking(std::string portInput, std::string addressInput, std::string userNameInput);
+    RCnetworking(std::string portInput, std::string addressInput, std::string userNameInput, Logger *logInput);
 
     /* RCnetworking destructor
      * Will send a disconnection message to the server informing it of the
@@ -179,6 +179,6 @@ private:
     // Networking logger instance
     // Do we want to keep the Networking class as using its own logger, or do
     // we want to have the entire chat program use one logger instance? ~ JS
-    Logger log;
+    Logger *log;
 
 };

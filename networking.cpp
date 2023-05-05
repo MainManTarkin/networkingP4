@@ -29,7 +29,7 @@ void RCnetworking::prepareMessage(std::string *messageToSend, char command)
 // If you're unfamiliar with the syntax here, I'm initializing the 'log' variable
 // by calling the Logger constructor
 // This way it can just stay as a regular member and not a pointer or anything weird
-RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std::string userNameInput) : log("networking-log.txt")
+RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std::string userNameInput, Logger *logInput)
 {
 
     int getAddressReturnVal = 0;
@@ -51,7 +51,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     memset(&basedInfo, 0, sizeof(struct addrinfo));
 
     std::stringstream ss;
-
+ 
     // check user input
     int portInt = std::stoi(portInput);
     // check for vaild user port inputs
@@ -59,9 +59,11 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     {
 
         ss << "RCnetworking() - gave invaild port number: " << portInt;
-        log.AddMessageToLog(ss.str());
+        log->AddMessageToLog(ss.str());
         throw std::runtime_error("invaild port number given to RCnetworking()");
     }
+
+    log = logInput;
 
     // set socket for tcp and dont care about ip version
     basedInfo.ai_family = AF_UNSPEC;
@@ -72,7 +74,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
 
         ss << "RCnetworking() - problem with getaddrinfo(): Line: " << (__LINE__ - 2)
            << "| return code: " << gai_strerror(getAddressReturnVal);
-        log.AddMessageToLog(ss.str());
+        log->AddMessageToLog(ss.str());
         throw std::runtime_error("you put in the wrong input num-nuts");
     }
 
@@ -84,7 +86,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
         {
 
             ss << "RCnetworking() - problem with socket(): " << strerror(errno);
-            log.AddMessageToLog(ss.str());
+            log->AddMessageToLog(ss.str());
             continue;
         }
 
@@ -96,7 +98,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
                 ss << "RCnetworking() - problem with close(): " << strerror(errno)
                    << std::endl
                    << "Line: " << (__LINE__ - 5);
-                log.AddMessageToLog(ss.str());
+                log->AddMessageToLog(ss.str());
             }
             clientSocket = closedSocketVal;
             continue;
@@ -109,7 +111,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     {
 
         ss << "RCnetworking() - failed to connect to server with address: " << addressInput;
-        log.AddMessageToLog(ss.str());
+        log->AddMessageToLog(ss.str());
 
         throw std::runtime_error("check your internet connection cause it probs sucks num-nuts");
     }
@@ -121,7 +123,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
 
         ss << "prepareClient() - problem setting the socket to non-blocking: "
            << strerror(errno);
-        log.AddMessageToLog(ss.str());
+        log->AddMessageToLog(ss.str());
         throw std::runtime_error("you can not even block a socket num-nuts");
     }
 
@@ -131,7 +133,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     {
 
         ss << "RCnetworking() - problem with send(): " << strerror(errno);
-        log.AddMessageToLog(ss.str());
+        log->AddMessageToLog(ss.str());
 
         throw std::runtime_error("your grandmas potato cant even send the message num-nuts");
     }
@@ -153,7 +155,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     {
 
         ss << "RCnetworking() - problem with select(): " << strerror(errno);
-        log.AddMessageToLog(ss.str());
+        log->AddMessageToLog(ss.str());
 
         throw std::runtime_error("you could not even select() a functional socket num-nuts");
     }
@@ -172,7 +174,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
             {
 
                 ss << "RCnetworking() - problem with recv(): " << strerror(errno);
-
+                log->AddMessageToLog(ss.str());
                 throw std::runtime_error("your computer recv()s messages like a drunken sailor num-nuts");
             }
         }
@@ -203,7 +205,7 @@ RCnetworking::~RCnetworking()
             std::stringstream ss;
             ss << "~RCnetworking() - problem with send()ing goodbye message: "
                << strerror(errno);
-            log.AddMessageToLog(ss.str());
+            log->AddMessageToLog(ss.str());
         }
 
         if (close(clientSocket))
@@ -211,7 +213,7 @@ RCnetworking::~RCnetworking()
             std::stringstream ss;
             ss << "~RCnetworking() - problem with close()ing socket: "
                << strerror(errno);
-            log.AddMessageToLog(ss.str());
+            log->AddMessageToLog(ss.str());
         }
     }
 
@@ -235,7 +237,7 @@ int RCnetworking::sendMessage(std::string messageInput)
     {
         std::stringstream ss;
         ss << "Failed to send full message";
-        log.AddMessageToLog(ss.str());
+        log->AddMessageToLog(ss.str());
         // deal with this better
     }
 
@@ -265,7 +267,7 @@ int RCnetworking::handleRecv()
         if (errno != EAGAIN || errno != EWOULDBLOCK)
         {
             ss << "handleRecv() - problem with recv at line: " << (__LINE__ - 5) ;
-            log.AddMessageToLog(ss.str());
+            log->AddMessageToLog(ss.str());
             throw std::runtime_error(strerror(errno));
         }
     }
@@ -274,7 +276,7 @@ int RCnetworking::handleRecv()
 
 
         ss << "handleRecv() - problem with recv at line: " << (__LINE__ - 14);
-        log.AddMessageToLog(ss.str());
+        log->AddMessageToLog(ss.str());
         throw std::runtime_error("server dropped connection");
     }
     else if (bytesRecv > 0)
@@ -299,7 +301,7 @@ int RCnetworking::handleRecv()
                     if (errno != EAGAIN || errno != EWOULDBLOCK)
                     {
                         ss << "handleRecv() - problem with recv at line: " << (__LINE__ - 7);
-                        log.AddMessageToLog(ss.str());
+                        log->AddMessageToLog(ss.str());
                         throw std::runtime_error(strerror(errno));
                     }
                     else
@@ -380,7 +382,7 @@ bool RCnetworking::checkForRecv()
     }
     catch (const std::exception &e)
     {
-        log.AddMessageToLog(e.what());
+        log->AddMessageToLog(e.what());
         throw std::runtime_error("checkForRecv() - failure in handleRecv()");
     }
 
