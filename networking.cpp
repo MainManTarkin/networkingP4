@@ -51,16 +51,16 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
     memset(&basedInfo, 0, sizeof(struct addrinfo));
 
     std::stringstream ss;
- 
+
     // check user input
     int portInt = std::stoi(portInput);
     // check for vaild user port inputs
     if (portInt > maxPortNum || portInt < minPortNum)
     {
 
-        ss << "RCnetworking() - gave invaild port number: " << portInt;
+        ss << "RCnetworking() - gave invalid port number: " << portInt;
         log->AddMessageToLog(ss.str());
-        throw std::runtime_error("invaild port number given to RCnetworking()");
+        throw std::runtime_error("Invalid port number given to RCnetworking()");
     }
 
     log = logInput;
@@ -75,7 +75,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
         ss << "RCnetworking() - problem with getaddrinfo(): Line: " << (__LINE__ - 2)
            << "| return code: " << gai_strerror(getAddressReturnVal);
         log->AddMessageToLog(ss.str());
-        throw std::runtime_error("you put in the wrong input num-nuts");
+        throw std::runtime_error("Error retrieving address info");
     }
 
     getAdderListCreated = true;
@@ -113,7 +113,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
         ss << "RCnetworking() - failed to connect to server with address: " << addressInput;
         log->AddMessageToLog(ss.str());
 
-        throw std::runtime_error("check your internet connection cause it probs sucks num-nuts");
+        throw std::runtime_error("Failed to connect to server with address " + addressInput);
     }
 
     socketCreated = true;
@@ -124,7 +124,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
         ss << "prepareClient() - problem setting the socket to non-blocking: "
            << strerror(errno);
         log->AddMessageToLog(ss.str());
-        throw std::runtime_error("you can not even block a socket num-nuts");
+        throw std::runtime_error("Error setting up socket configuration");
     }
 
     prepareMessage(&userNameInput, 'H');
@@ -135,7 +135,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
         ss << "RCnetworking() - problem with send(): " << strerror(errno);
         log->AddMessageToLog(ss.str());
 
-        throw std::runtime_error("your grandmas potato cant even send the message num-nuts");
+        throw std::runtime_error("Error sending initial message to server");
     }
 
     /*
@@ -157,7 +157,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
         ss << "RCnetworking() - problem with select(): " << strerror(errno);
         log->AddMessageToLog(ss.str());
 
-        throw std::runtime_error("you could not even select() a functional socket num-nuts");
+        throw std::runtime_error("Error with select() while configuring socket");
     }
     else if (!selectRV)
     {
@@ -175,7 +175,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
 
                 ss << "RCnetworking() - problem with recv(): " << strerror(errno);
                 log->AddMessageToLog(ss.str());
-                throw std::runtime_error("your computer recv()s messages like a drunken sailor num-nuts");
+                throw std::runtime_error("Error receiving ack message from server ");
             }
         }
         else
@@ -183,8 +183,9 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
 
             if (strncmp(ackRecvBuffer, ackMessage, sizeof(ackMessage)))
             {
-
-                throw std::runtime_error("server sent bad ack message");
+                ss << "Received unexpected ack message from server: " << ackRecvBuffer;
+                log->AddMessageToLog(ss.str);
+                throw std::runtime_error("Server sent bad ack message");
             }
         }
     }
@@ -277,11 +278,11 @@ int RCnetworking::handleRecv()
 
         ss << "handleRecv() - problem with recv at line: " << (__LINE__ - 14);
         log->AddMessageToLog(ss.str());
-        throw std::runtime_error("server dropped connection");
+        throw std::runtime_error("Server dropped connection");
     }
     else if (bytesRecv > 0)
     {
-        //add are recevied message to the string buffer 
+        //add are recevied message to the string buffer
         recvMessage.append(intermediateBuffer);
         totalBytesRecv += bytesRecv;
 
@@ -290,12 +291,12 @@ int RCnetworking::handleRecv()
 
             while (bytesRecv)
             {
-                
+
                 memset(intermediateBuffer, 0, intermediateBufferSize);
 
                 if ((bytesRecv = recv(clientSocket, intermediateBuffer, (sizeof(intermediateBuffer) - 1), 0)) == -1)
                 {
-                    //the if block handles any errors given by recv() 
+                    //the if block handles any errors given by recv()
                     //other wise the errors are related to non-blocking returning zero bytes
                     //break the loop when there is no more to recv
                     if (errno != EAGAIN || errno != EWOULDBLOCK)
