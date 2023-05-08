@@ -74,7 +74,7 @@ inline int handleArgs(int argcInput, char *argvInput[]){
 int main(int argc, char* argv[]){
 
     int mainRetVal = goodReturn;
-
+    Logger logit("networking-log.txt");
     if((mainRetVal = handleArgs(argc,argv))){
 
         if(mainRetVal == -1){
@@ -97,7 +97,7 @@ int main(int argc, char* argv[]){
     //to test using netcat or joey's server
     try
     {
-        RCnetworking testNetworkingAPI(portNumber, address, username);
+        RCnetworking testNetworkingAPI(portNumber, address, username, &logit);
         testNetworkingAPI.sendMessage("Hello!");
         std::this_thread::sleep_for(std::chrono::milliseconds(500)); // delay to avoid crashing Perry's server
 
