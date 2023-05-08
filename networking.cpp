@@ -341,7 +341,7 @@ int RCnetworking::handleRecv()
                     if (recvMessage[i] == '\n')
                     {
                         c = i;
-                        endOfMessage = (i - 1);
+                        endOfMessage = (i - 2);
                         messageIndex = (i + 1);
                         recvedStrings.push_back(recvMessage.substr(startOfMessage, endOfMessage));
                         break;
