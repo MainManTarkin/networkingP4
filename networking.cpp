@@ -184,7 +184,7 @@ RCnetworking::RCnetworking(std::string portInput, std::string addressInput, std:
             if (strncmp(ackRecvBuffer, ackMessage, sizeof(ackMessage)))
             {
                 ss << "Received unexpected ack message from server: " << ackRecvBuffer;
-                log->AddMessageToLog(ss.str);
+                log->AddMessageToLog(ss.str());
                 throw std::runtime_error("Server sent bad ack message");
             }
         }
