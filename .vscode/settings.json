@@ -65,6 +65,8 @@
         "future": "cpp",
         "mutex": "cpp",
         "sstream": "cpp",
-        "fstream": "cpp"
+        "fstream": "cpp",
+        "numbers": "cpp",
+        "semaphore": "cpp"
     }
 }
